@@ -49,7 +49,14 @@ impl Chip8 {
     }
 }
 
+    /*
+    * Load the program into memory.
+    * "Most Chip-8 programs start at location 0x200 (512)"
+    */
     pub fn load_cartridge(&mut self, data: &[u8]) {
-
+        for (i,&item) in data.iter().enumerate() {
+            let address = 0x200 + i;
+            self.memory[address] = item;
+        }
     }
 }
