@@ -14,4 +14,5 @@ fn main() {
     let cartridge = CartridgeReader::new(&cartridge_file_name);
 
     let mut chip8 = Chip8::new();
+    chip8.load_cartridge(&cartridge.memory);
 }
