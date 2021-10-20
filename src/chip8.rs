@@ -20,7 +20,7 @@ pub struct Chip8 {
     sp: u16,
     vx: [u8; REGISTER_SIZE],
     i: u16,
-    pc: u16,
+    pc: usize,
     delay_timer: u8,
     sound_timer: u8,
     keypad: [u8; KEYPAD_SIZE]
@@ -58,5 +58,253 @@ impl Chip8 {
             let address = 0x200 + i;
             self.memory[address] = item;
         }
+    }
+
+    pub fn cycle(&self) {
+        let opcode = self.fetch();
+        println!("{:#04X?}", opcode);
+    }
+
+    fn fetch(&self) -> u16 {
+        return (self.memory[self.pc] as u16) << 8 | (self.memory[self.pc + 1] as u16);
+    }
+
+    fn decode(&mut self, opcode: u16) {
+        // split opcode into nibbles
+        let nibbles = (
+            (opcode & 0xF000) >> 12,
+            (opcode & 0x0F00) >> 8,
+            (opcode & 0x00F0) >> 4,
+            (opcode & 0x000F)
+        );
+
+        let nnn = opcode & 0x0FFF;
+        let nn = opcode & 0x00FF;
+        let n = (opcode & 0x000F);
+        let x = (opcode & 0xF000) >> 8;
+        let y = (opcode & 0x00F0) >> 4;
+
+        match nibbles {
+            (0x0a, _, _, _) => self.op_annn(nnn),
+            (0x0b, _, _, _) => self.op_bnnn(nnn),
+            (0x00, _, _, _) => self.op_0nnn(nnn),
+            (0x01, _, _, _) => self.op_1nnn(nnn),
+            (0x02, _, _, _) => self.op_2nnn(nnn),
+            (0x03, _, _, _) => self.op_3xnn(x, nn),
+            (0x04, _, _, _) => self.op_4xnn(x, nn),
+            (0x05, _, _, 0x00) => self.op_5xy0(x, y),
+            (0x06, _, _, _) => self.op_6xnn(x, nn),
+            (0x07, _, _, _) => self.op_7xnn(x, nn),
+            (0x0c, _, _, _) => self.op_cxnn(x, nn),
+            (0x08, _, _, 0x00) => self.op_8xy0(x, y),
+            (0x08, _, _, 0x01) => self.op_8xy1(x, y),
+            (0x08, _, _, 0x02) => self.op_8xy2(x, y),
+            (0x08, _, _, 0x03) => self.op_8xy3(x, y),
+            (0x08, _, _, 0x04) => self.op_8xy4(x, y),
+            (0x08, _, _, 0x05) => self.op_8xy5(x, y),
+            (0x08, _, _, 0x06) => self.op_8xy6(x, y),
+            (0x08, _, _, 0x07) => self.op_8xy7(x, y),
+            (0x08, _, _, 0x0e) => self.op_8xye(x, y),
+            (0x09, _, _, 0x00) => self.op_9xy0(x, y),
+            (0x0d, _, _, _) => self.op_dxyn(x, y, n),
+            (0x0e, _, 0x09, 0x0e) => self.op_ex9e(x),
+            (0x0e, _, 0x0a, 0x01) => self.op_exa1(x),
+            (0x0f, _, 0x00, 0x07) => self.op_fx07(x),
+            (0x0f, _, 0x00, 0x0a) => self.op_fx0a(x),
+            (0x0f, _, 0x01, 0x05) => self.op_fx15(x),
+            (0x0f, _, 0x01, 0x08) => self.op_fx18(x),
+            (0x0f, _, 0x01, 0x0e) => self.op_fx1e(x),
+            (0x0f, _, 0x02, 0x09) => self.op_fx29(x),
+            (0x0f, _, 0x03, 0x03) => self.op_fx33(x),
+            (0x0f, _, 0x05, 0x05) => self.op_fx55(x),
+            (0x0f, _, 0x06, 0x05) => self.op_fx65(x),
+            (0x00, 0x00, 0x0e, 0x00) => self.op_00e0(),
+            (0x00, 0x00, 0x0e, 0x0e) => self.op_00ee(),
+            _ => println!("oops")
+        }
+    }
+
+    /*
+    * OPCODES
+    */
+
+    // "Sets I to the address NNN."
+    fn op_annn(&mut self, nnn: u16) {
+        // not implemented
+    }
+
+    // "Jumps to the address NNN plus V0."
+    fn op_bnnn(&mut self, nnn: u16) {
+        // not implemented
+    }
+
+    // "Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN. Not necessary for most ROMs."
+    fn op_0nnn(&mut self, nnn: u16) {
+        // not implemented
+    }
+
+    // "Jumps to address NNN."
+    fn op_1nnn(&mut self, nnn: u16) {
+        // not implemented
+    }
+
+    // "Calls subroutine at NNN."
+    fn op_2nnn(&mut self, nnn: u16) {
+        // not implemented
+    }
+
+    // "Skips the next instruction if VX equals NN. (Usually the next instruction is a jump to skip a code block)"
+    fn op_3xnn(&mut self, x: u16, nn: u16) {
+        // not implemented
+    }
+
+    // "Skips the next instruction if VX does not equal NN. (Usually the next instruction is a jump to skip a code block)"
+    fn op_4xnn(&mut self, x: u16, nn: u16) {
+        // not implemented
+    }
+
+    // "Skips the next instruction if VX equals VY. (Usually the next instruction is a jump to skip a code block)"
+    fn op_5xy0(&mut self, x: u16, nn: u16) {
+        // not implemented
+    }
+
+    // "Sets VX to NN."
+    fn op_6xnn(&mut self, x: u16, nn: u16) {
+        // not implemented
+    }
+
+    // "Adds NN to VX. (Carry flag is not changed)"
+    fn op_7xnn(&mut self, x: u16, nn: u16) {
+        // not implemented
+    }
+
+    // "Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN."
+    fn op_cxnn(&mut self, x: u16, nn: u16) {
+        // not implemented
+    }
+
+    // "Sets VX to the value of VY."
+    fn op_8xy0(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "Sets VX to VX or VY. (Bitwise OR operation)"
+    fn op_8xy1(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "Sets VX to VX and VY. (Bitwise AND operation)"
+    fn op_8xy2(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "Sets VX to VX xor VY."
+    fn op_8xy3(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there is not."
+    fn op_8xy4(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there is not."
+    fn op_8xy5(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "Stores the least significant bit of VX in VF and then shifts VX to the right by 1."
+    fn op_8xy6(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there is not."
+    fn op_8xy7(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "Stores the most significant bit of VX in VF and then shifts VX to the left by 1."
+    fn op_8xye(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+    
+    // "Skips the next instruction if VX does not equal VY. (Usually the next instruction is a jump to skip a code block)"
+    fn op_9xy0(&mut self, x: u16, y: u16) {
+        // not implemented
+    }
+
+    // "Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels. 
+    // Each row of 8 pixels is read as bit-coded starting from memory location I; 
+    // I value does not change after the execution of this instruction. 
+    // As described above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that does not happen"
+    fn op_dxyn(&mut self, x: u16, y: u16, n: u16) {
+        // not implemented
+    }
+
+    // "Skips the next instruction if the key stored in VX is pressed. (Usually the next instruction is a jump to skip a code block)"
+    fn op_ex9e(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Skips the next instruction if the key stored in VX is not pressed. (Usually the next instruction is a jump to skip a code block)"
+    fn op_exa1(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Sets VX to the value of the delay timer."
+    fn op_fx07(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "A key press is awaited, and then stored in VX. (Blocking Operation. All instruction halted until next key event)"
+    fn op_fx0a(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Sets the delay timer to VX."
+    fn op_fx15(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Sets the sound timer to VX."
+    fn op_fx18(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Adds VX to I. VF is not affected."
+    fn op_fx1e(&mut self, x: u16) {
+        // not implemented()
+    }
+
+    // "Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal) are represented by a 4x5 font."
+    fn op_fx29(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Stores the binary-coded decimal representation of VX, with the most significant of three digits at the address in I, the middle digit at I plus 1, 
+    // and the least significant digit at I plus 2. (In other words, take the decimal representation of VX, place the hundreds digit in memory at location in I, 
+    // the tens digit at location I+1, and the ones digit at location I+2.)"
+    fn op_fx33(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Stores V0 to VX (including VX) in memory starting at address I. The offset from I is increased by 1 for each value written, but I itself is left unmodified."
+    fn op_fx55(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Fills V0 to VX (including VX) with values from memory starting at address I. The offset from I is increased by 1 for each value written, but I itself is left unmodified."
+    fn op_fx65(&mut self, x: u16) {
+        // not implemented
+    }
+
+    // "Clears the screen."
+    fn op_00e0(&mut self) {
+        // not implemented
+    }
+    
+    // "Returns from a subroutine."
+    fn op_00ee(&mut self) {
+        // not implemented
     }
 }
