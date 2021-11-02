@@ -21,6 +21,8 @@ pub const DISPLAY_WIDTH: usize = 64;
 
 pub const DISPLAY_HEIGHT: usize = 32;
 
+pub const DISPLAY_SCALE: u32 = 4; // allows for a 256 * 128 display -- similar to display for Megachip
+
 pub const MEMORY_SIZE: usize = 4096;
 
 pub const STACK_SIZE: usize = 16;

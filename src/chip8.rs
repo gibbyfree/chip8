@@ -12,6 +12,7 @@ use crate::consts::{FONTSET, MEMORY_SIZE, DISPLAY_WIDTH, DISPLAY_HEIGHT, STACK_S
 * delay_timer: "Chip-8 also has two special purpose 8-bit registers, for the delay and sound timers."
 * sound_timer: ^
 * keypad: "The computers which originally used the Chip-8 Language had a 16-key hexadecimal keypad"
+* redraw: I added this to mark whether or not it's necessary to redraw the display.
 */
 pub struct Chip8 {
     memory: [u8; MEMORY_SIZE],
@@ -23,7 +24,8 @@ pub struct Chip8 {
     pc: usize,
     delay_timer: u8,
     sound_timer: u8,
-    keypad: [u8; KEYPAD_SIZE]
+    keypad: [u8; KEYPAD_SIZE],
+    redraw: bool
 }
 
 impl Chip8 {
@@ -45,7 +47,8 @@ impl Chip8 {
         pc: 0x200,
         delay_timer: 0,
         sound_timer: 0,
-        keypad: [0; KEYPAD_SIZE]
+        keypad: [0; KEYPAD_SIZE],
+        redraw: false
     }
 }
 
@@ -60,9 +63,18 @@ impl Chip8 {
         }
     }
 
-    pub fn cycle(&self) {
+    pub fn cycle(&mut self) {
         let opcode = self.fetch();
+        self.decode(opcode);
         println!("{:#04X?}", opcode);
+    }
+
+    pub fn needsRedraw(&mut self) -> bool {
+        return self.redraw;
+    }
+
+    pub fn checkVram(&mut self) -> [[u8; DISPLAY_WIDTH]; DISPLAY_HEIGHT] {
+        return self.gfx;
     }
 
     fn fetch(&self) -> u16 {
@@ -80,14 +92,13 @@ impl Chip8 {
 
         let nnn = opcode & 0x0FFF;
         let nn = opcode & 0x00FF;
-        let n = (opcode & 0x000F);
+        let n = opcode & 0x000F;
         let x = (opcode & 0xF000) >> 8;
         let y = (opcode & 0x00F0) >> 4;
 
         match nibbles {
             (0x0a, _, _, _) => self.op_annn(nnn),
             (0x0b, _, _, _) => self.op_bnnn(nnn),
-            (0x00, _, _, _) => self.op_0nnn(nnn),
             (0x01, _, _, _) => self.op_1nnn(nnn),
             (0x02, _, _, _) => self.op_2nnn(nnn),
             (0x03, _, _, _) => self.op_3xnn(x, nn),
@@ -138,11 +149,6 @@ impl Chip8 {
         // not implemented
     }
 
-    // "Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN. Not necessary for most ROMs."
-    fn op_0nnn(&mut self, nnn: u16) {
-        // not implemented
-    }
-
     // "Jumps to address NNN."
     fn op_1nnn(&mut self, nnn: u16) {
         // not implemented
@@ -164,7 +170,7 @@ impl Chip8 {
     }
 
     // "Skips the next instruction if VX equals VY. (Usually the next instruction is a jump to skip a code block)"
-    fn op_5xy0(&mut self, x: u16, nn: u16) {
+    fn op_5xy0(&mut self, x: u16, y: u16) {
         // not implemented
     }
 
@@ -300,7 +306,12 @@ impl Chip8 {
 
     // "Clears the screen."
     fn op_00e0(&mut self) {
-        // not implemented
+        for x in 0..DISPLAY_WIDTH {
+            for y in 0..DISPLAY_HEIGHT {
+                self.gfx[x][y] = 0;
+            }
+        }
+        self.redraw = true;
     }
     
     // "Returns from a subroutine."
