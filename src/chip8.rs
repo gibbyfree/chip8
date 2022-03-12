@@ -141,7 +141,7 @@ impl Chip8 {
 
     // "Sets I to the address NNN."
     fn op_annn(&mut self, nnn: u16) {
-        // not implemented
+        self.i = nnn;
     }
 
     // "Jumps to the address NNN plus V0."
@@ -151,12 +151,14 @@ impl Chip8 {
 
     // "Jumps to address NNN."
     fn op_1nnn(&mut self, nnn: u16) {
-        // not implemented
+        self.pc = nnn as usize;
     }
 
     // "Calls subroutine at NNN."
     fn op_2nnn(&mut self, nnn: u16) {
-        // not implemented
+        self.stack[(self.sp as usize)] = self.pc as u16; // save current pc
+        self.sp += 1;
+        self.pc = nnn as usize;
     }
 
     // "Skips the next instruction if VX equals NN. (Usually the next instruction is a jump to skip a code block)"
@@ -176,12 +178,12 @@ impl Chip8 {
 
     // "Sets VX to NN."
     fn op_6xnn(&mut self, x: u16, nn: u16) {
-        // not implemented
+       self.vx[x as usize] = nn as u8;
     }
 
     // "Adds NN to VX. (Carry flag is not changed)"
     fn op_7xnn(&mut self, x: u16, nn: u16) {
-        // not implemented
+        self.vx[x as usize] += nn as u8;
     }
 
     // "Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN."
@@ -244,7 +246,18 @@ impl Chip8 {
     // I value does not change after the execution of this instruction. 
     // As described above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that does not happen"
     fn op_dxyn(&mut self, x: u16, y: u16, n: u16) {
-        // not implemented
+        self.vx[0x0f] = 0;
+        for row in 0..n { 
+            let y = (self.vx[y as usize] as usize + (row as usize)) % 32;
+            for pixel in 0..8 {
+                let x = (self.vx[x as usize] as usize + pixel) % 64;
+                let value = (self.memory[(self.i + row) as usize] >> (7 - pixel)) & 1;
+                self.vx[0x0f] |= value & self.gfx[y][x];
+                self.gfx[y][x]^= value;
+            }
+        }
+        self.redraw = true;
+        self.pc += 2;
     }
 
     // "Skips the next instruction if the key stored in VX is pressed. (Usually the next instruction is a jump to skip a code block)"
@@ -306,16 +319,19 @@ impl Chip8 {
 
     // "Clears the screen."
     fn op_00e0(&mut self) {
-        for x in 0..DISPLAY_WIDTH {
-            for y in 0..DISPLAY_HEIGHT {
-                self.gfx[x][y] = 0;
+        for y in 0..DISPLAY_HEIGHT {
+            for x in 0..DISPLAY_WIDTH {
+                self.gfx[y][x] = 0;
             }
         }
         self.redraw = true;
+        self.pc += 1;
     }
     
     // "Returns from a subroutine."
+    // "The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer."
     fn op_00ee(&mut self) {
-        // not implemented
+        self.pc = self.stack[(self.sp as usize)] as usize;
+        self.sp -= 1;
     }
 }
